@@ -1,7 +1,8 @@
 from enum import Enum
 from random import randint, choice
 
-from maze import Maze, Direction, Feature
+from maze import Maze, Direction, FinishedCell, DIRECTIONS
+import feature
 
 class HomeDirection(Enum):
     UNKNOWN = 0
@@ -34,6 +35,7 @@ def create_maze(width, height, difficulty):
             self.home_direction = HomeDirection.UNKNOWN
             self.distance = 0
             self.is_exit = False
+            self.is_on_path = False
 
         @property
         def passages(self):
@@ -44,10 +46,16 @@ def create_maze(width, height, difficulty):
         @property
         def features(self):
             if self.home_direction == HomeDirection.HERE:
-                return [Feature.ENTRANCE]
+                return [feature.Entrance()]
             if self.is_exit:
-                return [Feature.EXIT]
+                return [feature.Exit()]
             return []
+
+        @property
+        def background_colour(self):
+            if self.is_on_path:
+                return '#CCFF99'
+            return 'white'
 
     scaffold = Maze(ScaffoldCell, width, height)
     x_start = randint(0, width-1)
@@ -56,6 +64,7 @@ def create_maze(width, height, difficulty):
 
     start.explored = True
     start.home_direction = HomeDirection.HERE
+    start.is_on_path = True
     active_list = [start]
     max_distance = 0
     exit = start
@@ -89,12 +98,18 @@ def create_maze(width, height, difficulty):
             active_list.pop(0)
 
     exit.is_exit = True
+    active = exit
+    while active.home_direction != HomeDirection.HERE:
+        active.is_on_path = True
+        active = scaffold.offset(active, DIRECTIONS[active.home_direction.to_direction()])
 
-    scaffold.test_display()
+    return scaffold.convert(FinishedCell)
 
 if __name__ == '__main__':
-    create_maze(12, 12, int(input("difficulty: ")))
-    input()
+    size = int(input("size: "))
+    difficulty = int(input("difficulty: "))
+    maze = create_maze(size, size, difficulty)
+    maze.test_display()
 
 
 

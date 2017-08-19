@@ -1,6 +1,5 @@
 from enum import Enum
-
-WALL_SIZE = 20
+from constants import WALL_SIZE
 
 class Direction(Enum):
     NORTH = 0
@@ -18,28 +17,6 @@ DIRECTIONS = {
     Direction.SOUTH: (0, -1),
     Direction.WEST: (-1, 0)
 }
-
-def draw_dot(turtle, colour):
-    old_colour = turtle.pencolor()
-    turtle.pencolor(colour)
-    xcor = turtle.xcor()
-    ycor = turtle.ycor()
-    turtle.goto(xcor + WALL_SIZE/2, ycor + WALL_SIZE/2)
-    turtle.dot(WALL_SIZE/3)
-    turtle.goto(xcor, ycor)
-    turtle.pencolor(old_colour)
-
-class Feature(Enum):
-    ENTRANCE = 0
-    EXIT = 1
-
-
-    def draw(self, turtle):
-        colour = {
-                Feature.ENTRANCE: 'green',
-                Feature.EXIT: 'red'
-        }[self]
-        draw_dot(turtle, colour)
 
 class Maze:
     def __init__(self, make_cell, width, height):
@@ -60,6 +37,9 @@ class Maze:
         def satisfactory(x, y):
             return 0 <= x and x < self.width and 0 <= y and y < self.height
         return [ (d, self[k]) for (d, k) in options if satisfactory(*k) ]
+
+    def offset(self, cell, offset):
+        return self[cell.x + offset[0], cell.y + offset[1]]
 
     def display(self, turtle):
         pass
@@ -82,17 +62,31 @@ class Maze:
             t.left(90)
         t.forward(WALL_SIZE * self.height)
 
-        t.pencolor('white')
         t.penup()
         found_start = False
         found_end = False
         for x in range(self.width):
             for y in range(self.height):
+                t.penup()
+                t.setx(WALL_SIZE * x + 1)
+                t.sety(WALL_SIZE * y + 1)
+                t.color(self[x, y].background_colour)
+                t.begin_fill()
+                t.forward(WALL_SIZE-2)
+                t.right(90)
+                t.forward(WALL_SIZE-1)
+                t.right(90)
+                t.forward(WALL_SIZE-1)
+                t.right(90)
+                t.forward(WALL_SIZE-1)
+                t.right(90)
+                t.end_fill()
+                t.end_fill()
+                t.penup()
                 t.setx(WALL_SIZE * x)
                 t.sety(WALL_SIZE * y)
-                for feature in Feature:
-                    if feature in self[x, y].features:
-                        feature.draw(t)
+                for feature in self[x, y].features:
+                    feature.draw(t)
                 for direction in [Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH]:
                     t.forward(1)
                     if direction in self[x, y].passages:
@@ -105,3 +99,19 @@ class Maze:
         t.setx(0)
         t.sety(0)
         t.hideturtle()
+        t.getscreen().exitonclick()
+
+class FinishedCell:
+    def __init__(self, x, y, other=None):
+        self.x = x
+        self.y = y
+        if other:
+            self.passages = other.passages
+            self.features = other.features
+            self.background_colour = other.background_colour
+        else:
+            self.passages = []
+            self.features = []
+            self.background_colour = 'white'
+
+
